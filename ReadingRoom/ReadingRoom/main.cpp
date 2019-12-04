@@ -17,7 +17,7 @@ private :
 	const char* id;
 	const char* pw;
 	int num;
-	int studingTime;
+	int fare;
 public :
 	void setName(const char* name) {	this->name = name;	}
 	const char* getName() { return this->name; }
@@ -27,8 +27,8 @@ public :
 	const char* getPw() { return this->pw; }
 	void setNum(int num) { this->num = num; }
 	int getNum() { return this->num; }
-	void setStudingTime(int studingTime) { this->studingTime = studingTime; }
-	int getStudingTime() { return this->studingTime; }
+	void setFare(int fare) { this->fare = fare; }
+	int getFare() { return this->fare; }
 };
 
 void gotoxy(int x, int y) {
@@ -37,6 +37,7 @@ void gotoxy(int x, int y) {
 }
 
 void paintIntro(int n) {
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 14);
 	system("cls");
 	gotoxy(2, 2);			cout << "위, 아래 방향키와 엔터 키로 메뉴를 선택해주세요!";
 	gotoxy(12, 7);		cout << "         ■  ■■■■ ■    ■■■■           ■    ■   ■";
@@ -52,12 +53,13 @@ void paintIntro(int n) {
 	gotoxy(40, 17);		cout << "로그인";
 	gotoxy(39, 18);		cout << "회원가입";
 	gotoxy(39, 19);		cout << "이용안내" << endl;
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 15);
 }
 
 
 void Menu() {
 	while (1) {
-	paintIntro(17);
+	paintIntro(location);
 	int c = 0;
 		while (c != 13) { //enter key
 			c = _getch();
@@ -74,22 +76,76 @@ void Menu() {
 			}
 		}
 
+		char s1[100], s2[100];
+		char query[100];
+		int query_stat;
+		int check = 0;
+
 		switch (location) {
 		case 17:
+			
+			system("cls");
+			cout << "<< 로그인 >>" << endl << endl;
+			cout << "ID 입력 : ";
+			cin >> s1;;
+			cout << "PW 입력 : ";
+			cin >> s2;
+
+			sprintf_s(query, "select pw from readingroom where id = '%s';", s1);
+			query_stat = mysql_query(connection, query);
+			if (query_stat != 0) {
+				cout << "존재하지 않는 회원입니다." << endl;
+				Sleep(1000);
+				break;
+			}
+
+			MYSQL_RES *sql_result;
+			MYSQL_ROW sql_row;
+			sql_result = mysql_store_result(connection);
+			while ((sql_row = mysql_fetch_row(sql_result)) != NULL) {
+				if (strcmp(sql_row[0], s2) == 0) {
+					cout << "로그인 성공" << endl;
+					Sleep(1000);
+				}
+			}
+			mysql_free_result(sql_result);
+
 			break;
 		case 18:
 			user u1;
-			char s1[100], s2[100], s3[100], s4[100];
-			char query[100];
-			int query_stat;
+			char s3[100], s4[100];
+			char sql_T[100];
 
 			system("cls");
+			cout << "<< 회원가입>>" << endl << endl;
 			cout << "이름 입력 : ";
 			cin >> s1;
 			u1.setName(s1);
-			cout << "ID입력 : ";
-			cin >> s2;
-			u1.setId(s2);
+
+			while (1) {
+				
+				cout << "ID입력 : ";
+				cin >> s2;
+				query_stat = mysql_query(connection, "select id from readingroom;");
+
+				MYSQL_RES *sql_result;
+				MYSQL_ROW sql_row;
+				sql_result = mysql_store_result(connection);
+				while ((sql_row = mysql_fetch_row(sql_result)) != NULL) {
+					if (strcmp(sql_row[0], s2) == 0) {
+						cout << "아이디가 이미존재합니다." << endl;
+						check = 1;
+						break;
+					}
+					else
+						check = 0;
+				}
+				if (!check) {
+					mysql_free_result(sql_result);
+					u1.setId(s2);
+					break;
+				}
+			}
 			while (1) {
 				cout << "password 입력 : ";
 				cin >> s3;
@@ -116,8 +172,45 @@ void Menu() {
 			}
 			break;
 		case 19:
+			system("cls");
+			//┏ ┓┛┗ ━ ┃
+			gotoxy(16, 5);
+			cout << "┏";
+			for (int i = 0; i < 56; i++)
+				cout << "━";
+			cout << "┓";
+			for (int i = 0; i < 15; i++) {
+				gotoxy(16, 6 + i);
+				cout << "┃";
+				for (int j = 0; j < 56; j++)
+					cout << " ";
+				cout << "┃";
+			}
+			gotoxy(16, 20);
+			cout << "┗";
+			for (int i = 0; i < 56; i++)
+				cout << "━";
+			cout << "┛";
+
+			gotoxy(40, 7);
+			SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 14);
+			cout << "미림독서실"; 
+			SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 15);
+			gotoxy(20, 11);
+			cout << "요금은 일반석 하루 5000원, 1인실 하루 7000원입니다.";
+			gotoxy(25, 13);
+			cout << "다른 사람들을 위해 정숙유지 부탁드립니다.";
+			gotoxy(27, 15);
+			cout << "독서실 내에 음식물 반입 금지입니다.";
+			gotoxy(21, 17);
+			cout << "휴대전화는 무음모드, 혹은 전원 종료 부탁드립니다.";
+			gotoxy(18, 21);
+			cout << "메뉴화면으로 돌아가려면 아무키나 누르세요.";
+
+			_getch();
 			break;
 		}
+		location = 17;
 	}
 }
 
@@ -152,6 +245,7 @@ int main() {
 	mysql_free_result(sql_result);
 	*/
 
+	system("title 미림 독서실");
 	Menu();
 
 	mysql_close(&mysql);
