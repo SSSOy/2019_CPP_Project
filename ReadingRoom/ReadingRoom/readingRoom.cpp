@@ -40,6 +40,9 @@ public :
 	int getStudingTime() { return this->studingTime; }
 };
 
+
+User user;
+
 void gotoxy(int x, int y) {
 	COORD Pos = { x - 1, y - 1 };
 	SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), Pos);
@@ -66,8 +69,24 @@ void paintIntro(int n, string a, string b, string c, string d) {
 	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 15);
 }
 
+void Fare(string userTime) {
+	CString strTime;
+	SYSTEMTIME oTime;
+	::ZeroMemory(reinterpret_cast<void*>(&oTime), sizeof(oTime));
+	::GetLocalTime(&oTime);
+	strTime.Format(_T("%02d:%02d:%02d"), oTime.wHour, oTime.wMinute, oTime.wSecond);
+
+	int userT = stoi(userTime.substr(0, 2));
+	int currentT = _ttoi(strTime.Left(2));
+
+	if (userT > currentT) {
+		user.setStudingTime(userT - currentT);
+	}
+	else
+		user.setStudingTime(currentT - userT);
+}
+
 void readingRoom(const char *id, const char *pw) {
-	User user;
 	char query[100];
 	int query_stat;
 	int check = 1;
@@ -75,8 +94,6 @@ void readingRoom(const char *id, const char *pw) {
 	int seatBool[40] = { 0 };
 	int index = 0;
 	int seatChoice;
-	CString strTime;
-	int seatNum;
 
 	sprintf_s(query, "select name from readingroom where id = '%s';", id);
 	query_stat = mysql_query(connection, query);
@@ -89,12 +106,18 @@ void readingRoom(const char *id, const char *pw) {
 		user.setId(id);
 		user.setPw(pw);
 	}
-	mysql_free_result(sql_result);
+	mysql_free_result(sql_result);	
 
 
 	while (1) {
 		int seatBool[40] = { 0 };
 		int index = 0;
+		int seatNum = NULL;
+		CString strTime;
+		string name;
+		string time;
+		char s1[100];
+		int fare;
 
 		paintIntro(room_location, "입실", "퇴실", "요금확인", "돌아가기");
 
@@ -130,7 +153,9 @@ void readingRoom(const char *id, const char *pw) {
 			MYSQL_ROW sql_row;
 			sql_result = mysql_store_result(connection);
 			while ((sql_row = mysql_fetch_row(sql_result)) != NULL) {
-				seatNum = atoi(sql_row[0]);
+				if (sql_row[0] == NULL)
+					break;
+ 				seatNum = atoi(sql_row[0]);
 			}
 			if (seatNum != NULL) {
 				gotoxy(23, 10);
@@ -181,7 +206,7 @@ void readingRoom(const char *id, const char *pw) {
 			SYSTEMTIME oTime;
 			::ZeroMemory(reinterpret_cast<void*>(&oTime), sizeof(oTime));
 			::GetLocalTime(&oTime);
-			strTime.Format(_T("%4d-%02d-%02d %02d:%02d:%02d"), oTime.wYear, oTime.wMonth, oTime.wDay, oTime.wHour, oTime.wMinute, oTime.wSecond);
+			strTime.Format(_T("%02d:%02d:%02d"), oTime.wHour, oTime.wMinute, oTime.wSecond);
 
 			sprintf_s(query, "update readingRoom set seatNum = %d, time = '%s' where id = '%s';", seatChoice , strTime, id);
 			query_stat = mysql_query(connection, query);
@@ -192,11 +217,87 @@ void readingRoom(const char *id, const char *pw) {
 
 			break;
 		case 18:
+			system("cls");
+
+			sprintf_s(query, "select seatNum from readingroom where id = '%s';", id);
+			query_stat = mysql_query(connection, query);
+
+			sql_result = mysql_store_result(connection);
+			while ((sql_row = mysql_fetch_row(sql_result)) != NULL) {
+				if (sql_row[0] == NULL) {
+					break;
+				}
+				seatNum = atoi(sql_row[0]);
+			}
+			if (seatNum == NULL) {
+				gotoxy(23, 10);
+				cout << "이용중이 아닙니다. 입실 해주세요.";
+				Sleep(1500);
+				break;
+			}
+			sprintf_s(query, "select name from readingroom where id = '%s';", id);
+			query_stat = mysql_query(connection, query);
+
+			sql_result = mysql_store_result(connection);
+			while ((sql_row = mysql_fetch_row(sql_result)) != NULL) {
+				name = sql_row[0];
+			}
+			gotoxy(20, 5);
+			cout << name << "님 퇴실합니다.";
+			gotoxy(20, 7);
+			cout << "비밀번호 확인 : ";
+			cin >> s1;
+			if (strcmp(s1, user.getPw()) != 0) {
+				gotoxy(20, 8);
+				cout << "비밀번호 오류";
+				Sleep(1500);
+				break;
+			}
+			
+			sprintf_s(query, "update readingRoom set seatNum = NULL, time = NULL where id = '%s';", id);
+			query_stat = mysql_query(connection, query);
+
+			system("cls");
+			gotoxy(30, 8);
+			cout << "퇴실 완료";
+			Sleep(1500);
 
 			break;
 		case 19:
 			
+			system("cls");
+			sprintf_s(query, "select time, seatNum from readingroom where id = '%s';", id);
+			query_stat = mysql_query(connection, query);
+
+			sql_result = mysql_store_result(connection);
+			while ((sql_row = mysql_fetch_row(sql_result)) != NULL) {
+				time = " ";
+				if (sql_row[0] == NULL) {
+					break;
+				}
+				time = sql_row[0];
+				seatNum = atoi(sql_row[1]);
+			}
+			if (time.empty()) {
+				gotoxy(20, 8);
+				cout << "입실 중이 아닙니다. 입실 해주세요.";
+				Sleep(1500);
+				break;
+			}
+			Fare(time);
+			
+			if (seatNum < 31) {
+				fare = user.getStudingTime() * 1000;
+			}
+			else
+				fare = user.getStudingTime() * 1500;
+
+			gotoxy(20, 8);
+			cout << "요금은 " << fare << "원 입니다.";
+			Sleep(1500);
+			
 			break;
+
 		case 20:
 			return;
 		}
@@ -259,7 +360,7 @@ void Menu() {
 					Sleep(1000);
 				}
 			}
-			if (ch) {
+			if (ch == 1) {
 				readingRoom(s1, s2);
 			}
 			else {
