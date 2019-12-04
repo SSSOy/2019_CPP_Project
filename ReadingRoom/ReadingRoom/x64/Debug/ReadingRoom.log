@@ -1,4 +1,5 @@
 ﻿  main.cpp
-d:\2019 cpp project\readingroom\readingroom\main.cpp(35): warning C4838: 'int'에서 'SHORT'(으)로의 변환에는 축소 변환이 필요합니다.
-d:\2019 cpp project\readingroom\readingroom\main.cpp(117): warning C4101: 'sql_T' :참조되지 않은 지역 변수입니다.
+d:\2019 cpp project\readingroom\readingroom\main.cpp(44): warning C4838: 'int'에서 'SHORT'(으)로의 변환에는 축소 변환이 필요합니다.
+d:\2019 cpp project\readingroom\readingroom\main.cpp(186): warning C4477: 'sprintf_s' : 서식 문자열 '%s'에 'char *' 형식의 인수가 필요하지만 variadic 인수 2의 형식이 'ATL::CString'입니다.
+d:\2019 cpp project\readingroom\readingroom\main.cpp(236): warning C4101: 'sql_T' :참조되지 않은 지역 변수입니다.
   ReadingRoom.vcxproj -> D:\2019 CPP Project\ReadingRoom\x64\Debug\ReadingRoom.exe
